@@ -10,6 +10,7 @@ concurrency:
 
 env:
   prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+  KSP: ${{ secrets.KSP }}
 
 jobs:
   build:
@@ -26,23 +27,20 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Prepare keystore
-        run: echo ${{ secrets.android_keystore_base64 }} | base64 -d >$GITHUB_WORKSPACE/keystore.jks
+      - name: Building
+        run: |
+         chmod +x gradlew
+         ./gradlew app:assembleRelease
+      - name: Signing
+        run: |
+         java -jar apksign.jar --apks app/build/outputs/apk/release --ks android.keystore --ksAlias key  --ksKeyPass "$KSP" --ksPass "$KSP" --out app/build/outputs/apk/release
+         mv app/build/outputs/apk/release/app-release-aligned-signed.apk app/build/outputs/apk/release/release.apk
+         echo "VERSION="$(date +"%y%m%d%H")"" >> $GITHUB_ENV
 
-      - name: Build signed package
-        # Make sure that caches are disabled to generate reproducible release builds
-        run: ./gradlew --no-build-cache --no-configuration-cache --no-daemon app:assembleRelease
-        env:
-          ANDROID_KEYSTORE: ${{ github.workspace }}/keystore.jks
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.android_keystore_password }}
-          ANDROID_KEY_ALIAS: ${{ secrets.android_key_alias }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.android_key_password }}
-
-      - name: Create Github release
+      - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           prerelease: ${{ env.prerelease }}
-          files: app/build/outputs/apk/ose/release/*.apk
+          files: app/build/outputs/apk/release/*.apk
           fail_on_unmatched_files: true
           generate_release_notes: true
-          discussion_category_name: Announcements
