@@ -33,7 +33,7 @@ jobs:
          ./gradlew app:assembleRelease
       - name: Signing
         run: |
-         java -jar apksign.jar --apks app/build/outputs/apk/release --ks android.keystore --ksAlias key  --ksKeyPass "$KSP" --ksPass "$KSP" --out app/build/outputs/apk/release
+         java -jar apksign.jar --apks app/build/outputs/apk/release --ks davx.keystore --ksAlias key  --ksKeyPass "$KSP" --ksPass "$KSP" --out app/build/outputs/apk/release
          mv app/build/outputs/apk/release/app-release-aligned-signed.apk app/build/outputs/apk/release/release.apk
          echo "VERSION="$(date +"%y%m%d%H")"" >> $GITHUB_ENV
 
